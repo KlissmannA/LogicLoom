@@ -1,0 +1,72 @@
+## A SIMPLE ETL PROCCESS BETWEEN MYSQL AND POSTGRESQL ##
+
+## pip install  pymysql psycopg2 cryptography ##
+## Check with ping connection between Machines.
+
+import pymysql
+import psycopg2
+
+# MySQL database connection configuration
+mysql_host = '192.168.204.130'  # Host address for MySQL
+mysql_user = 'kliss'             # MySQL username
+mysql_password = 'password'      # MySQL password
+mysql_db = 'sales'               # MySQL database name
+mysql_table = 'sales'            # MySQL table name
+
+# PostgreSQL database connection configuration
+pg_host = '192.168.204.132'      # Host address for PostgreSQL
+pg_user = 'kliss'             # PostgreSQL username
+pg_password = 'password'         # PostgreSQL password
+pg_db = 'sales'                  # PostgreSQL database name
+pg_table = 'sales'               # PostgreSQL table name
+
+
+def copy_data():
+    mysql_conn = None
+    pg_conn = None
+
+    try:
+        # Connecting to MySQL
+        mysql_conn = pymysql.connect(host=mysql_host,
+                                     user=mysql_user,
+                                     password=mysql_password,
+                                     db=mysql_db)
+        mysql_cursor = mysql_conn.cursor()
+
+        # Connecting to PostgreSQL
+        pg_conn = psycopg2.connect(host=pg_host,
+                                   user=pg_user,
+                                   password=pg_password,
+                                   dbname=pg_db)
+        pg_cursor = pg_conn.cursor()
+
+        # Query to select all data from the PostgreSQL table
+        pg_cursor.execute(f"SELECT * FROM {pg_table}")
+        rows = pg_cursor.fetchall()
+
+        # Inserting data into the MySQL table
+        for row in rows:
+            # Converting data according to the structure of the MySQL table
+            converted_row = (row[0], row[1], int(row[2]), int(row[3]), row[4], float(row[5]), float(row[6]))
+            mysql_cursor.execute(f"INSERT INTO {mysql_table} VALUES (%s, %s, %s, %s, %s, %s, %s)", converted_row)
+
+        # Committing changes to MySQL
+        mysql_conn.commit()
+
+        print("Data successfully copied from PostgreSQL to MySQL.")
+
+    except Exception as e:
+        print("Error:", e)
+
+    finally:
+        # Closing connections
+        if mysql_conn:
+            mysql_conn.close()
+        if pg_conn:
+            pg_conn.close()
+
+
+if __name__ == "__main__":
+    copy_data()
+
+
